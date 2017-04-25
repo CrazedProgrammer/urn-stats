@@ -6,6 +6,7 @@
 
 (define print-output (= (car arg) "-l"))
 (define repo-path "~/Programs/urn")
+(define listen-port 2378)
 
 
 (defun os-exec! (command)
@@ -49,6 +50,9 @@
             body {
               background-color: #2b2b2b;
               color: #dddddd;
+              display: flex;
+              align-items: center;
+              justify-content: center;
             }
             a {
               color: #f0f0f0;
@@ -61,13 +65,6 @@
             }
             .page {
               background-color: #333333;
-              position:absolute;
-              top:50%;
-              left:50%;
-              padding:15px;
-              -ms-transform: translateX(-50%) translateY(-50%);
-              -webkit-transform: translate(-50%,-50%);
-              transform: translate(-50%,-50%);
             }
             .monospace {
               font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
@@ -81,15 +78,23 @@
     (push-cdr! page (.. "Last updated: " (os/date "%a %b  %d %X %Y EST") "</h5>")) 
     (push-cdr! page "<h3>Lines of code</h3>")
     (push-cdr! page (.. "<span class=\"monospace\">" (escape (gen-loc!)) "</span>"))
+    (push-cdr! page "<h3>Commit history</h3>")
+    (push-cdr! page "<span class=\"monospace\">")
+    (push-cdr! page (.. "Total amount of commits (master): " (string/trim (os-exec! (.. "git --git-dir " repo-path "/.git rev-list --count master")))))
+    (push-cdr! page (.. "Amount of commits in the last 24 hours (master): " (string/trim (os-exec! (.. "git --git-dir " repo-path "/.git rev-list --count master --max-age=" (number->string (- (os/time) 86400)))))))
+    (push-cdr! page (.. "Amount of commits in the past week (master): " (string/trim (os-exec! (.. "git --git-dir " repo-path "/.git rev-list --count master --max-age=" (number->string (- (os/time) 604800)))))))
+    (push-cdr! page "</span>")
     (push-cdr! page "<h3>Compile times</h3>")
     (push-cdr! page (.. "<span class=\"monospace\">" (escape (gen-compile-times!)) "</span>"))
+    (push-cdr! page "<h6>Made by CrazedProgrammer<br />")
+    (push-cdr! page "<a href=\"https://github.com/CrazedProgrammer/urn-stats\">Source</a></h6>")
     (push-cdr! page "</div></body></html>")
     (concat page "\n")))
 
 
 (log! "Generating page:")
 (let* [(page (generate-page!))
-       (server (socket/bind! "*" 2378))]
+       (server (socket/bind! "*" listen-port))]
   (log! (.. "Started server on " (concat (list (self server :getsockname)) " ")))
   (while true
     (let* [(client (self server :accept))]      
