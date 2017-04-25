@@ -68,7 +68,9 @@
               padding-left: 20px;
               padding-right: 20px;
             }
-            .monospace {
+            .monospace {              
+              display: block;
+              width: 100%;
               font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
               white-space: pre;
             }
@@ -82,9 +84,9 @@
     (push-cdr! page (.. "<span class=\"monospace\">" (escape (gen-loc!)) "</span>"))
     (push-cdr! page "<h3>Commit history</h3>")
     (push-cdr! page "<span class=\"monospace\">")
-    (push-cdr! page (.. "Total amount of commits (master): " (string/trim (os-exec! (.. "git --git-dir " repo-path "/.git rev-list --count master")))))
-    (push-cdr! page (.. "Amount of commits in the last 24 hours (master): " (string/trim (os-exec! (.. "git --git-dir " repo-path "/.git rev-list --count master --max-age=" (number->string (- (os/time) 86400)))))))
-    (push-cdr! page (.. "Amount of commits in the past week (master): " (string/trim (os-exec! (.. "git --git-dir " repo-path "/.git rev-list --count master --max-age=" (number->string (- (os/time) 604800)))))))
+    (push-cdr! page (.. "Total number of commits (master): " (string/trim (os-exec! (.. "git --git-dir " repo-path "/.git rev-list --count master")))))
+    (push-cdr! page (.. "Number of commits in the last 24 hours (master): " (string/trim (os-exec! (.. "git --git-dir " repo-path "/.git rev-list --count master --max-age=" (number->string (- (os/time) 86400)))))))
+    (push-cdr! page (.. "Number of commits in the past week (master): " (string/trim (os-exec! (.. "git --git-dir " repo-path "/.git rev-list --count master --max-age=" (number->string (- (os/time) 604800)))))))
     (push-cdr! page "</span>")
     (push-cdr! page "<h3>Compile times</h3>")
     (push-cdr! page (.. "<span class=\"monospace\">" (escape (gen-compile-times!)) "</span>"))
