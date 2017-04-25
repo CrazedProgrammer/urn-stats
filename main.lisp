@@ -65,6 +65,8 @@
             }
             .page {
               background-color: #333333;
+              padding-left: 20px;
+              padding-right: 20px;
             }
             .monospace {
               font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
