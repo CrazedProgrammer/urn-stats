@@ -91,7 +91,7 @@
     (push-cdr! page "<h3>Compile times</h3>")
     (push-cdr! page (.. "<span class=\"monospace\">" (escape (gen-compile-times!)) "</span>"))
     (push-cdr! page "<h6>Made by CrazedProgrammer<br />")
-    (push-cdr! page "<a href=\"https://github.com/CrazedProgrammer/urn-stats\">Source</a></h6>")
+    (push-cdr! page "<a href=\"https://github.com/CrazedProgrammer/urn-stats\">Source Code</a></h6>")
     (push-cdr! page "</div></body></html>")
     (concat page "\n")))
 
