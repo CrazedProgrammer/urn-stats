@@ -32,13 +32,13 @@
       (print! logstr))  
     (append-all! "log.txt" (.. logstr "\n"))))
 
-(defun cut-head-lines (str n)
+(defun cut-head-lines (str a)
   (with (lines (string/split str "\n"))
-    (concat (drop lines n) "\n")))
+    (concat (drop lines a) "\n")))
 
-(defun cut-tail-lines (str n)
+(defun cut-tail-lines (str a)
   (with (lines (string/split str "\n"))
-    (concat (take lines (- (# lines) n)) "\n")))
+    (concat (take lines (- (n lines) a)) "\n")))
     
 
 (defun generate-page! ()
