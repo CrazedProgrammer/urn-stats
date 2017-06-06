@@ -21,7 +21,7 @@
 
 (defun gen-compile-times! ()
   (log! "Calculating compile times...")
-  (cut-tail-lines (cut-head-lines (os-exec! (.. "make -C " repo-path " tacky/cli LUA=luajit LUA_FLAGS+=-t")) 2) 2))
+  (cut-tail-lines (cut-head-lines (os-exec! (.. "make -C " repo-path " bin/urn LUA=luajit LUA_FLAGS+=-t")) 2) 2))
 
 (defun escape (str)
   (id (string/gsub str "\n" "<br />")))
