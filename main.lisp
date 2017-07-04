@@ -7,6 +7,8 @@
 (define print-output (= (car arg) "-l"))
 (define repo-path "~/Programs/urn")
 (define listen-port 2378)
+(define log-path "log.txt")
+(define stats-path "stats.txt")
 
 
 (defun os-exec! (command)
@@ -21,7 +23,12 @@
 
 (defun gen-compile-times! ()
   (log! "Calculating compile times...")
-  (cut-tail-lines (cut-head-lines (os-exec! (.. "make -C " repo-path " bin/urn LUA=luajit LUA_FLAGS+=-t")) 2) 2))
+  (with (lines (string/split (cut-tail-lines (cut-head-lines (os-exec! (.. "make -C " repo-path " bin/urn LUA=luajit LUA_FLAGS+=-t")) 2) 2) "\n"))
+    (append-all! stats-path (os/time))
+    (for-each line lines
+      (append-all! stats-path (.. "," (string/trim (string/sub line 21)))))
+    (append-all! stats-path "\n")
+    (concat lines "\n")))
 
 (defun escape (str)
   (id (string/gsub str "\n" "<br />")))
@@ -29,8 +36,8 @@
 (defun log! (str)
   (with (logstr (.. (os/date "%m-%d %X") ": " str))
     (when print-output
-      (print! logstr))  
-    (append-all! "log.txt" (.. logstr "\n"))))
+      (print! logstr))
+    (append-all! log-path (.. logstr "\n"))))
 
 (defun cut-head-lines (str a)
   (with (lines (string/split str "\n"))
@@ -39,11 +46,11 @@
 (defun cut-tail-lines (str a)
   (with (lines (string/split str "\n"))
     (concat (take lines (- (n lines) a)) "\n")))
-    
+
 
 (defun generate-page! ()
   (let* [(page '())]
-    (push-cdr! page 
+    (push-cdr! page
      "<html>
         <head>
           <style>
