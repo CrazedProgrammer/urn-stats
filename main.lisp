@@ -2,7 +2,7 @@
 (import urntils/http http)
 (import lua/os os)
 (import lua/io (popen))
-(import extra/io (append-all!))
+(import extra/io (append-all! read-all!))
 
 (define print-output (= (car arg) "-l"))
 (define repo-path "~/Programs/urn")
@@ -75,15 +75,17 @@
               padding-left: 20px;
               padding-right: 20px;
             }
-            .monospace {              
+            .monospace {
               display: block;
               width: 100%;
               font-family: Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
               white-space: pre;
             }
           </style>
+          <script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.js\"></script>
         </head>
-        <body><div class=\"page\">")
+        <body>
+          <div class=\"page\">")
     (push-cdr! page "<h1>Urn main repository statistics</h1>")
     (push-cdr! page "<h5>Powered by <a href=\"https://squiddev.github.io/urn/\">Urn</a> and <a href=\"https://github.com/CrazedProgrammer/urntils\">urntils</a><br />")
     (push-cdr! page (.. "Last updated: " (os/date "%a %b  %d %X %Y EST") "</h5>")) 
@@ -97,21 +99,97 @@
     (push-cdr! page "</span>")
     (push-cdr! page "<h3>Compile times</h3>")
     (push-cdr! page (.. "<span class=\"monospace\">" (escape (gen-compile-times!)) "</span>"))
+    (push-cdr! page "<canvas id=\"myChart\" width=\"400\" height=\"400\"></canvas>")
     (push-cdr! page "<h6>Made by CrazedProgrammer<br />")
     (push-cdr! page "<a href=\"https://github.com/CrazedProgrammer/urn-stats\">Source Code</a></h6>")
-    (push-cdr! page "</div></body></html>")
-    (concat page "\n")))
+    (push-cdr! page "  </div>
+          <script>
+var csvdata = ")
+    (push-cdr! page (.. "\"" (id (string/gsub (or (read-all! "stats.txt") "") "\n" "|")) "\""))
+    (push-cdr! page
+               ";
+                var csvlines = csvdata.split('|');
+                csvlines.pop();
+                var csvdata = [];
+                for (i = 0; i < csvlines.length; i++)
+                  csvdata[i] = csvlines[i].split(',');
+
+                var csvcolumns = [];
+                for (i = 0; i < csvdata[0].length; i++)
+                {
+                  csvcolumns[i] = [];
+                  for (j = 0; j < csvdata.length; j++)
+                    if (i == 0)
+                      csvcolumns[i][j] = new Date(csvdata[j][i] * 1000).toISOString().slice(0, 13);
+                    else
+                      csvcolumns[i][j] = csvdata[j][i];
+                }
+
+                var ctx = document.getElementById(\"myChart\");
+                var myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: csvcolumns[0],
+                        datasets: [
+                        {
+                            label: 'emit-lua',
+                            backgroundColor: '#A74800',
+                            data: csvcolumns[4],
+                            fill: true,
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'optimise',
+                            data: csvcolumns[3],
+                            backgroundColor: '#944000',
+                            borderWidth: 1,
+                            fill: true
+                        },
+                        {
+                            label: 'warning',
+                            data: csvcolumns[2],
+                            backgroundColor: '#7E3700',
+                            borderWidth: 1,
+                            fill: true
+                        },
+                        {
+                            label: 'loading',
+                            data: csvcolumns[1],
+                            backgroundColor: '#5F2900',
+                            borderWidth: 1,
+                            fill: true
+                        }
+                        ]
+                    },
+                    options: {
+                        tooltips: {
+                                        mode: 'index',
+                                        intersect: false
+                                    },
+                        scales: {
+                            yAxes: [{
+                                stacked: true,
+                                ticks: {
+                                    beginAtZero:true
+                                }
+                            }]
+                        }
+                    }
+                });
+                </script>
+                </body></html>")
+      (concat page "\n")))
 
 
-(log! "Generating page:")
-(let* [(page (generate-page!))
-       (server (socket/bind! "*" listen-port))]
-  (log! (.. "Started server on " (concat (list (self server :getsockname)) " ")))
-  (while true
-    (let* [(client (self server :accept))]      
-      (self client :settimeout 1)
-      (with (request-path (http/get-request-path (car (list (self client :receive)))))
-        (log! (.. "GET " request-path))
-        (self client :send (http/generate-response page))
-        (self client :close)))))
+  (log! "Generating page:")
+  (let* [(page (generate-page!))
+         (server (socket/bind! "*" listen-port))]
+    (log! (.. "Started server on " (concat (list (self server :getsockname)) " ")))
+    (while true
+      (let* [(client (self server :accept))]
+        (self client :settimeout 1)
+        (with (request-path (http/get-request-path (car (list (self client :receive)))))
+          (log! (.. "GET " request-path))
+          (self client :send (http/generate-response page))
+          (self client :close)))))
 
