@@ -21,14 +21,23 @@
   (log! "Calculating lines of code...")
   (cut-head-lines (os-exec! (.. "cloc " repo-path)) 5))
 
-(defun gen-compile-times! ()
+(defun gen-data! ()
   (log! "Calculating compile times...")
-  (with (lines (string/split (cut-tail-lines (cut-head-lines (os-exec! (.. "make -C " repo-path " bin/urn LUA=luajit LUA_FLAGS+=-t")) 2) 2) "\n"))
-    (append-all! stats-path (os/time))
-    (for-each line lines
-      (append-all! stats-path (.. "," (string/trim (string/sub line 21)))))
-    (append-all! stats-path "\n")
-    (concat lines "\n")))
+  (let* [(last-commit (car (string/split (last (string/split (cut-tail-lines (read-all! stats-path) 1) "\n")) "%,")))
+         (current-commit (string/trim (os-exec! (.. "git --git-dir " repo-path "/.git rev-list master | head -c 9"))))
+         (compile-times (string/split (cut-tail-lines (cut-head-lines (os-exec! (.. "make -C \"" repo-path "\" bin/urn LUA=luajit LUA_FLAGS+=-t")) 2) 2) "\n"))]
+    (log! (.. last-commit " " current-commit))
+    (if (/= last-commit current-commit)
+      (progn
+        (log! "Calculating amount of tests and appending data to stats file...")
+        (append-all! stats-path current-commit)
+        (append-all! stats-path (.. "," (os/time)))
+        (for-each line compile-times
+          (append-all! stats-path (.. "," (string/trim (string/sub line 21)))))
+        (append-all! stats-path (.. "," (string/trim (os-exec! (.. "make -C \"" repo-path "\" -k QUIET=1 LUA=luajit test | grep passed | awk '{s+=$1}END{print s}'")))))
+        (append-all! stats-path "\n"))
+      (log! "No new commit, skipping..."))
+    (concat compile-times "\n")))
 
 (defun escape (str)
   (id (string/gsub str "\n" "<br />")))
@@ -98,14 +107,14 @@
     (push-cdr! page (.. "Number of commits in the past week (master): " (string/trim (os-exec! (.. "git --git-dir " repo-path "/.git rev-list --count master --max-age=" (number->string (- (os/time) 604800)))))))
     (push-cdr! page "</span>")
     (push-cdr! page "<h3>Compile times</h3>")
-    (push-cdr! page (.. "<span class=\"monospace\">" (escape (gen-compile-times!)) "</span>"))
+    (push-cdr! page (.. "<span class=\"monospace\">" (escape (gen-data!)) "</span>"))
     (push-cdr! page "<canvas id=\"myChart\" width=\"400\" height=\"400\"></canvas>")
     (push-cdr! page "<h6>Made by CrazedProgrammer<br />")
     (push-cdr! page "<a href=\"https://github.com/CrazedProgrammer/urn-stats\">Source Code</a></h6>")
     (push-cdr! page "  </div>
           <script>
 var csvdata = ")
-    (push-cdr! page (.. "\"" (id (string/gsub (or (read-all! "stats.txt") "") "\n" "|")) "\""))
+    (push-cdr! page (.. "\"" (id (string/gsub (or (read-all! stats-path) "") "\n" "|")) "\""))
     (push-cdr! page
                ";
                 var csvlines = csvdata.split('|');
@@ -119,9 +128,6 @@ var csvdata = ")
                 {
                   csvcolumns[i] = [];
                   for (j = 0; j < csvdata.length; j++)
-                    if (i == 0)
-                      csvcolumns[i][j] = new Date(csvdata[j][i] * 1000).toISOString().slice(0, 13);
-                    else
                       csvcolumns[i][j] = csvdata[j][i];
                 }
 
@@ -134,27 +140,27 @@ var csvdata = ")
                         {
                             label: 'emit-lua',
                             backgroundColor: '#A74800',
-                            data: csvcolumns[4],
+                            data: csvcolumns[5],
                             fill: true,
                             borderWidth: 1
                         },
                         {
                             label: 'optimise',
-                            data: csvcolumns[3],
+                            data: csvcolumns[4],
                             backgroundColor: '#944000',
                             borderWidth: 1,
                             fill: true
                         },
                         {
                             label: 'warning',
-                            data: csvcolumns[2],
+                            data: csvcolumns[3],
                             backgroundColor: '#7E3700',
                             borderWidth: 1,
                             fill: true
                         },
                         {
                             label: 'loading',
-                            data: csvcolumns[1],
+                            data: csvcolumns[2],
                             backgroundColor: '#5F2900',
                             borderWidth: 1,
                             fill: true
