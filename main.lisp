@@ -25,7 +25,7 @@
   (log! "Calculating compile times...")
   (let* [(last-commit (car (string/split (last (string/split (cut-tail-lines (read-all! stats-path) 1) "\n")) "%,")))
          (current-commit (string/trim (os-exec! (.. "git --git-dir " repo-path "/.git rev-list master | head -c 9"))))
-         (compile-times (string/split (cut-tail-lines (cut-head-lines (os-exec! (.. "make -C \"" repo-path "\" bin/urn LUA=luajit LUA_FLAGS+=-t")) 2) 2) "\n"))]
+         (compile-times (string/split (cut-tail-lines (cut-head-lines (os-exec! (.. "make -C \"" repo-path "\" all LUA=luajit TIME=1")) 2) 2) "\n"))]
     (log! (.. last-commit " " current-commit))
     (if (/= last-commit current-commit)
       (progn
